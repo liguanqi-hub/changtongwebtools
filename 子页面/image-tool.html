@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> 在线批图工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        accent: '#8B5CF6',
+                        dark: '#1E293B',
+                        light: '#F8FAFC'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .backdrop-blur-sm {
+                backdrop-filter: blur(4px);
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .transition-transform-opacity {
+                transition-property: transform, opacity;
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="font-inter bg-gray-50 text-dark min-h-screen flex flex-col">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-md fixed w-full z-50 transition-all duration-300" id="navbar">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <div class="h-10 w-10 rounded-lg bg-primary flex items-center justify-center text-white">
+                    <i class="fa-solid fa-image"></i>
+                </div>
+                <h1 class="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">在线批图工具</h1>
+            </div>
+            
+            <nav class="hidden md:flex items-center space-x-6">
+                <a href="#editor" class="text-gray-600 hover:text-primary transition-colors">开始处理</a>
+            </nav>
+            
+            <div class="flex items-center space-x-3">
+                <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <i class="fa-regular fa-moon text-gray-600"></i>
+                </button>
+                <button id="mobile-menu-button" class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                    <i class="fa-solid fa-bars text-gray-600"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 移动端菜单 -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white shadow-lg absolute w-full transition-all duration-300 transform -translate-y-full">
+            <div class="container mx-auto px-4 py-3 flex flex-col space-y-3">
+                <a href="#editor" class="text-gray-600 hover:text-primary transition-colors py-2 border-b border-gray-100">开始处理</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 编辑器部分 -->
+    <section id="editor" class="pt-28 pb-20 px-4">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center max-w-3xl mx-auto mb-12">
+                <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold text-dark mb-4">在线批图工具</h2>
+                <p class="text-gray-600 text-lg">上传图片或创建新图片，开始你的图像处理</p>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- 左侧控制面板 -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-xl shadow-md p-6 h-full">
+                        <h3 class="text-lg font-semibold mb-6 flex items-center">
+                            <i class="fa-solid fa-sliders mr-2 text-primary"></i>
+                            处理选项
+                        </h3>
+                        
+                        <div class="space-y-6">
+                            <!-- 上传区域 -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">上传图片</label>
+                                <div id="drop-area" class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary transition-colors cursor-pointer">
+                                    <i class="fa-solid fa-cloud-upload text-3xl text-gray-400 mb-3"></i>
+                                    <p class="text-gray-500 mb-2">拖放图片到这里，或</p>
+                                    <button id="upload-btn" class="bg-primary/10 hover:bg-primary/20 text-primary px-4 py-2 rounded-lg transition-colors">
+                                        选择文件
+                                    </button>
+                                    <input type="file" id="file-input" class="hidden" multiple accept="image/*">
+                                    <p class="text-xs text-gray-400 mt-3">支持 JPG, PNG, WebP 格式，最大 20MB/张</p>
+                                </div>
+                            </div>
+                            
+                            <!-- 新建图片 -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">新建图片</label>
+                                <div class="space-y-3">
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-xs text-gray-500 mb-1">宽度 (像素)</label>
+                                            <input type="number" id="new-width" min="1" max="10000" value="800" class="w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-gray-500 mb-1">高度 (像素)</label>
+                                            <input type="number" id="new-height" min="1" max="10000" value="600" class="w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">背景颜色</label>
+                                        <input type="color" id="new-bg-color" value="#ffffff" class="w-full h-10 border border-gray-300 rounded-md cursor-pointer">
+                                    </div>
+                                    <button id="create-new-image-btn" class="w-full bg-accent hover:bg-accent/90 text-white font-medium py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center">
+                                        <i class="fa-solid fa-plus mr-2"></i>
+                                        <span>创建新图片</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- 处理按钮 -->
+                            <button id="process-btn" class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i class="fa-solid fa-magic mr-2"></i>
+                                <span>开始处理</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 右侧预览区域 -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-xl shadow-md p-6 h-full">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-semibold flex items-center">
+                                <i class="fa-solid fa-eye mr-2 text-primary"></i>
+                                预览
+                            </h3>
+                            <div class="flex items-center space-x-2">
+                                <button id="prev-image" class="p-2 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <i class="fa-solid fa-chevron-left text-gray-600"></i>
+                                </button>
+                                <span id="image-counter" class="text-sm text-gray-500">0/0</span>
+                                <button id="next-image" class="p-2 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <i class="fa-solid fa-chevron-right text-gray-600"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="preview-container" class="relative bg-gray-100 rounded-lg overflow-hidden h-[400px] flex items-center justify-center">
+                            <div id="empty-preview" class="text-center p-8">
+                                <i class="fa-solid fa-image text-4xl text-gray-300 mb-4"></i>
+                                <p class="text-gray-500">上传图片或创建新图片开始处理</p>
+                            </div>
+                            <div id="preview-image-container" class="hidden w-full h-full flex items-center justify-center">
+                                <img id="preview-image" src="" alt="预览图片" class="max-w-full max-h-full object-contain">
+                            </div>
+                            <div id="preview-loading" class="hidden absolute inset-0 bg-white/80 flex items-center justify-center">
+                                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                            </div>
+                        </div>
+                        
+                        <div id="image-list" class="mt-6 grid grid-cols-4 gap-3 overflow-y-auto max-h-[120px] scrollbar-hide">
+                            <!-- 上传的图片缩略图将在这里显示 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- JavaScript -->
+    <script>
+        // 导航栏滚动效果
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 10) {
+                navbar.classList.add('py-2');
+                navbar.classList.add('shadow-lg');
+            } else {
+                navbar.classList.remove('py-2');
+                navbar.classList.remove('shadow-lg');
+            }
+        });
+        
+        // 移动端菜单
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+            if (!mobileMenu.classList.contains('hidden')) {
+                mobileMenu.classList.remove('-translate-y-full');
+                mobileMenu.classList.add('translate-y-0');
+            } else {
+                mobileMenu.classList.remove('translate-y-0');
+                mobileMenu.classList.add('-translate-y-full');
+            }
+        });
+        
+        // 平滑滚动
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                    
+                    // 关闭移动菜单
+                    if (!mobileMenu.classList.contains('hidden')) {
+                        mobileMenu.classList.add('hidden');
+                        mobileMenu.classList.remove('translate-y-0');
+                        mobileMenu.classList.add('-translate-y-full');
+                    }
+                }
+            });
+        });
+        
+        // 上传功能
+        const dropArea = document.getElementById('drop-area');
+        const fileInput = document.getElementById('file-input');
+        const uploadBtn = document.getElementById('upload-btn');
+        const createNewImageBtn = document.getElementById('create-new-image-btn');
+        const imageList = document.getElementById('image-list');
+        const previewContainer = document.getElementById('preview-container');
+        const emptyPreview = document.getElementById('empty-preview');
+        const previewImageContainer = document.getElementById('preview-image-container');
+        const previewImage = document.getElementById('preview-image');
+        const prevImageBtn = document.getElementById('prev-image');
+        const nextImageBtn = document.getElementById('next-image');
+        const imageCounter = document.getElementById('image-counter');
+        const processBtn = document.getElementById('process-btn');
+        
+        let uploadedImages = [];
+        let currentImageIndex = 0;
+        
+        // 上传按钮点击
+        uploadBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        // 创建新图片按钮点击
+        createNewImageBtn.addEventListener('click', () => {
+            const width = parseInt(document.getElementById('new-width').value) || 800;
+            const height = parseInt(document.getElementById('new-height').value) || 600;
+            const bgColor = document.getElementById('new-bg-color').value || '#ffffff';
+            
+            // 创建一个新的canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            
+            // 填充背景色
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, width, height);
+            
+            // 将canvas转换为图片URL
+            const imageUrl = canvas.toDataURL('image/png');
+            
+            // 添加到图片列表
+            uploadedImages.push(imageUrl);
+            addImageToGallery(imageUrl);
+            
+            // 显示预览
+            showPreview(imageUrl);
+            currentImageIndex = uploadedImages.length - 1;
+            updateImageCounter();
+            
+            // 启用处理按钮
+            if (uploadedImages.length > 0) {
+                processBtn.disabled = false;
+            }
+        });
+        
+        // 文件选择
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+        
+        // 拖放功能
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropArea.classList.add('border-primary');
+            dropArea.classList.add('bg-blue-50');
+        }
+        
+        function unhighlight() {
+            dropArea.classList.remove('border-primary');
+            dropArea.classList.remove('bg-blue-50');
+        }
+        
+        dropArea.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        });
+        
+        // 处理文件
+        function handleFiles(files) {
+            for (const file of files) {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const imageUrl = e.target.result;
+                        uploadedImages.push(imageUrl);
+                        addImageToGallery(imageUrl);
+                        
+                        // 如果是第一张图片，显示预览
+                        if (uploadedImages.length === 1) {
+                            showPreview(imageUrl);
+                            updateImageCounter();
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+            
+            // 启用处理按钮
+            if (uploadedImages.length > 0) {
+                processBtn.disabled = false;
+            }
+        }
+        
+        // 添加图片到图库
+        function addImageToGallery(imageUrl) {
+            const galleryItem = document.createElement('div');
+            galleryItem.className = 'relative cursor-pointer group';
+            galleryItem.innerHTML = `
+                <img src="${imageUrl}" alt="上传的图片" class="w-full h-16 object-cover rounded-lg border-2 border-transparent group-hover:border-primary transition-colors">
+                <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <button class="bg-white text-primary rounded-full p-1 text-xs">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+            `;
+            
+            galleryItem.addEventListener('click', () => {
+                const index = Array.from(imageList.children).indexOf(galleryItem);
+                showPreview(uploadedImages[index]);
+                currentImageIndex = index;
+                updateImageCounter();
+                updateImageNavigationButtons();
+            });
+            
+            imageList.appendChild(galleryItem);
+            updateImageCounter();
+            updateImageNavigationButtons();
+        }
+        
+        // 显示预览
+        function showPreview(imageUrl) {
+            emptyPreview.classList.add('hidden');
+            previewImageContainer.classList.remove('hidden');
+            previewImage.src = imageUrl;
+        }
+        
+        // 更新图片计数器
+        function updateImageCounter() {
+            imageCounter.textContent = `${currentImageIndex + 1}/${uploadedImages.length}`;
+        }
+        
+        // 更新图片导航按钮状态
+        function updateImageNavigationButtons() {
+            prevImageBtn.disabled = uploadedImages.length <= 1 || currentImageIndex === 0;
+            nextImageBtn.disabled = uploadedImages.length <= 1 || currentImageIndex === uploadedImages.length - 1;
+        }
+        
+        // 上一张图片
+        prevImageBtn.addEventListener('click', () => {
+            if (currentImageIndex > 0) {
+                currentImageIndex--;
+                showPreview(uploadedImages[currentImageIndex]);
+                updateImageCounter();
+                updateImageNavigationButtons();
+            }
+        });
+        
+        // 下一张图片
+        nextImageBtn.addEventListener('click', () => {
+            if (currentImageIndex < uploadedImages.length - 1) {
+                currentImageIndex++;
+                showPreview(uploadedImages[currentImageIndex]);
+                updateImageCounter();
+                updateImageNavigationButtons();
+            }
+        });
+        
+        // 处理按钮点击
+        processBtn.addEventListener('click', () => {
+            // 显示加载状态
+            const previewLoading = document.getElementById('preview-loading');
+            previewLoading.classList.remove('hidden');
+            
+            // 模拟处理过程
+            setTimeout(() => {
+                // 处理完成，隐藏加载状态
+                previewLoading.classList.add('hidden');
+                
+                // 显示处理完成的通知
+                const notification = document.createElement('div');
+                notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 flex items-center';
+                notification.innerHTML = `
+                    <i class="fa-solid fa-check-circle mr-2"></i>
+                    <span>图片处理完成!</span>
+                `;
+                
+                document.body.appendChild(notification);
+                
+                // 3秒后移除通知
+                setTimeout(() => {
+                    notification.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 300);
+                }, 3000);
+            }, 2000);
+        });
+        
+        // 主题切换功能
+        const themeToggle = document.getElementById('theme-toggle');
+        let darkMode = false;
+        
+        themeToggle.addEventListener('click', () => {
+            darkMode = !darkMode;
+            document.body.classList.toggle('bg-gray-900');
+            document.body.classList.toggle('text-white');
+            
+            if (darkMode) {
+                themeToggle.innerHTML = '<i class="fa-solid fa-sun text-yellow-400"></i>';
+            } else {
+                themeToggle.innerHTML = '<i class="fa-regular fa-moon text-gray-600"></i>';
+            }
+        });
+    </script>
+</body>
+</html>
+    

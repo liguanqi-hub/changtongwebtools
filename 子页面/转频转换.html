@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频格式转换工具</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .container {
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .upload-area {
+            border: 2px dashed #3498db;
+            border-radius: 5px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-area:hover {
+            background-color: #f0f8ff;
+            border-color: #2980b9;
+        }
+        #fileInput {
+            display: none;
+        }
+        .options {
+            margin-top: 20px;
+        }
+        .format-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .format-option {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .format-option:hover {
+            background-color: #eaf2f8;
+            border-color: #3498db;
+        }
+        .format-option.selected {
+            background-color: #3498db;
+            color: white;
+            border-color: #2980b9;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        .preview {
+            margin-top: 30px;
+            text-align: center;
+        }
+        #videoPreview {
+            max-width: 100%;
+            max-height: 300px;
+            margin-top: 10px;
+            display: none;
+            background-color: #000;
+        }
+        .file-info {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        .settings {
+            margin-top: 15px;
+            display: none;
+        }
+        .settings label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .settings select, .settings input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .progress {
+            margin-top: 15px;
+            display: none;
+        }
+        progress {
+            width: 100%;
+            height: 20px;
+        }
+        .download-btn {
+            display: none;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>视频格式转换工具</h1>
+        
+        <div class="upload-area" id="uploadArea">
+            <h3>点击或拖放视频到此处</h3>
+            <p>支持 MP4, AVI, MOV, MKV, FLV, WMV, WEBM 等格式</p>
+            <input type="file" id="fileInput" accept="video/*">
+        </div>
+        
+        <div class="file-info" id="fileInfo">
+            未选择文件
+        </div>
+        
+        <div class="preview">
+            <video id="videoPreview" controls></video>
+        </div>
+        
+        <div class="options">
+            <h3>转换为:</h3>
+            <div class="format-options">
+                <div class="format-option" data-format="mp4">MP4</div>
+                <div class="format-option" data-format="webm">WebM</div>
+                <div class="format-option" data-format="avi">AVI</div>
+                <div class="format-option" data-format="mov">MOV</div>
+                <div class="format-option" data-format="mkv">MKV</div>
+                <div class="format-option" data-format="flv">FLV</div>
+                <div class="format-option" data-format="wmv">WMV</div>
+                <div class="format-option" data-format="gif">GIF</div>
+            </div>
+            
+            <div class="settings" id="settings">
+                <h4>转换设置</h4>
+                <div>
+                    <label for="videoCodec">视频编码:</label>
+                    <select id="videoCodec">
+                        <option value="libx264">H.264</option>
+                        <option value="libx265">H.265/HEVC</option>
+                        <option value="vp8">VP8</option>
+                        <option value="vp9">VP9</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="audioCodec">音频编码:</label>
+                    <select id="audioCodec">
+                        <option value="aac">AAC</option>
+                        <option value="mp3">MP3</option>
+                        <option value="vorbis">Vorbis</option>
+                        <option value="opus">Opus</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="quality">质量:</label>
+                    <select id="quality">
+                        <option value="high">高</option>
+                        <option value="medium" selected>中</option>
+                        <option value="low">低</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="resolution">分辨率:</label>
+                    <select id="resolution">
+                        <option value="original">原始分辨率</option>
+                        <option value="1080">1080p</option>
+                        <option value="720">720p</option>
+                        <option value="480">480p</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <button id="convertBtn" disabled>转换视频</button>
+        
+        <div class="progress" id="progressContainer">
+            <p>转换进度:</p>
+            <progress id="progressBar" value="0" max="100"></progress>
+            <p id="progressText">0%</p>
+        </div>
+        
+        <div class="status" id="status"></div>
+        
+        <a href="#" class="download-btn" id="downloadBtn" download>
+            <button>下载转换后的视频</button>
+        </a>
+    </div>
+
+    <script>
+        // 注意：这是一个前端界面演示，实际视频转换需要后端支持或使用WebAssembly
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('fileInput');
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInfo = document.getElementById('fileInfo');
+            const videoPreview = document.getElementById('videoPreview');
+            const formatOptions = document.querySelectorAll('.format-option');
+            const convertBtn = document.getElementById('convertBtn');
+            const settingsDiv = document.getElementById('settings');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const statusDiv = document.getElementById('status');
+            const downloadBtn = document.getElementById('downloadBtn');
+            
+            let selectedFile = null;
+            let selectedFormat = null;
+            
+            // 上传区域点击事件
+            uploadArea.addEventListener('click', function() {
+                fileInput.click();
+            });
+            
+            // 拖放功能
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = '#f0f8ff';
+                uploadArea.style.borderColor = '#2980b9';
+            });
+            
+            uploadArea.addEventListener('dragleave', function() {
+                uploadArea.style.backgroundColor = '';
+                uploadArea.style.borderColor = '#3498db';
+            });
+            
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = '';
+                uploadArea.style.borderColor = '#3498db';
+                
+                if (e.dataTransfer.files.length) {
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            // 文件选择事件
+            fileInput.addEventListener('change', function() {
+                if (fileInput.files.length) {
+                    handleFile(fileInput.files[0]);
+                }
+            });
+            
+            // 格式选择事件
+            formatOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    formatOptions.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedFormat = this.dataset.format;
+                    settingsDiv.style.display = 'block';
+                    
+                    // 启用转换按钮
+                    if (selectedFile) {
+                        convertBtn.disabled = false;
+                    }
+                });
+            });
+            
+            // 转换按钮事件
+            convertBtn.addEventListener('click', convertVideo);
+            
+            // 处理选择的文件
+            function handleFile(file) {
+                // 检查文件类型
+                if (!file.type.match('video.*') && !file.name.match(/\.(mp4|avi|mov|mkv|webm|flv|wmv|gif)$/i)) {
+                    showStatus('请选择有效的视频文件', 'error');
+                    return;
+                }
+                
+                selectedFile = file;
+                fileInfo.textContent = `文件名: ${file.name} (${formatFileSize(file.size)})`;
+                
+                // 显示预览
+                const videoURL = URL.createObjectURL(file);
+                videoPreview.src = videoURL;
+                videoPreview.style.display = 'block';
+                
+                // 如果已经选择了格式，启用转换按钮
+                if (selectedFormat) {
+                    convertBtn.disabled = false;
+                }
+            }
+            
+            // 转换视频 (模拟过程)
+            function convertVideo() {
+                if (!selectedFile || !selectedFormat) {
+                    showStatus('请选择视频和目标格式', 'error');
+                    return;
+                }
+                
+                showStatus('正在准备转换...', '');
+                progressContainer.style.display = 'block';
+                
+                // 获取设置
+                const videoCodec = document.getElementById('videoCodec').value;
+                const audioCodec = document.getElementById('audioCodec').value;
+                const quality = document.getElementById('quality').value;
+                const resolution = document.getElementById('resolution').value;
+                
+                // 模拟转换进度
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += Math.random() * 10;
+                    if (progress > 100) progress = 100;
+                    
+                    progressBar.value = progress;
+                    progressText.textContent = `${Math.round(progress)}%`;
+                    
+                    if (progress === 100) {
+                        clearInterval(progressInterval);
+                        simulateConversionComplete();
+                    }
+                }, 500);
+                
+                function simulateConversionComplete() {
+                    // 在实际应用中，这里应该是从服务器获取转换后的视频
+                    // 这里我们只是模拟结果
+                    showStatus('转换完成! 点击下方按钮下载', 'success');
+                    
+                    // 创建一个模拟的下载链接
+                    // 注意: 实际应用中，这里应该是真实的转换后的视频文件
+                    const blob = new Blob(["这是一个模拟的视频转换结果。实际应用中，这里应该是转换后的视频文件。"], { type: 'video/' + selectedFormat });
+                    const url = URL.createObjectURL(blob);
+                    const fileName = selectedFile.name.replace(/\.[^/.]+$/, '') + '.' + selectedFormat;
+                    
+                    downloadBtn.href = url;
+                    downloadBtn.download = fileName;
+                    downloadBtn.style.display = 'block';
+                }
+            }
+            
+            // 显示状态信息
+            function showStatus(message, type) {
+                statusDiv.textContent = message;
+                statusDiv.className = 'status';
+                if (type) {
+                    statusDiv.classList.add(type);
+                }
+                statusDiv.style.display = 'block';
+            }
+            
+            // 格式化文件大小
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
+            }
+        });
+    </script>
+</body>
+</html>
